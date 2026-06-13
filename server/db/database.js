@@ -5,9 +5,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Store database file in the root directory
+// Store database file in the root directory, using /tmp on Vercel for write access
 const dbFile = process.env.NODE_ENV === 'test' ? 'carbonlens_test.db' : 'carbonlens.db';
-const dbPath = path.resolve(__dirname, `../../${dbFile}`);
+const dbPath = process.env.VERCEL 
+  ? '/tmp/carbonlens.db' 
+  : path.resolve(__dirname, `../../${dbFile}`);
 const db = new Database(dbPath);
 
 db.pragma('journal_mode = WAL');
