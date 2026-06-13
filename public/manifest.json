@@ -1,0 +1,16 @@
+{
+  "short_name": "CarbonLens",
+  "name": "CarbonLens Personal Carbon Footprint Tracker",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0a0f0a",
+  "theme_color": "#0a0f0a",
+  "display": "standalone",
+  "orientation": "portrait"
+}

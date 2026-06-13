@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar for a premium dark feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0f0a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e2e1e;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #22c55e;
+}
