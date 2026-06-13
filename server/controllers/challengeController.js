@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import db from '../db/database.js';
 
 // Predefined challenges config
@@ -347,14 +348,11 @@ export async function getChallengesTemplates(req, res, next) {
     `).get(userId, dateStr);
     const worstType = worstTypeRow ? worstTypeRow.activity_type : 'beef';
 
-    // 2. Try to generate using Claude if API key is configured
+    // 2. Try to generate using Claude or Gemini if API key is configured
+    const geminiKey = process.env.GEMINI_API_KEY;
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (apiKey && apiKey !== 'your_key_here') {
-      try {
-        const modelName = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
-        const anthropic = new Anthropic({ apiKey });
 
-        const prompt = `Generate 4 highly specific, personalized carbon reduction challenge templates for a user whose worst carbon category is "${worstCategory}" (specifically "${worstType}", which generated ${worstCo2} kg CO2 in the past 30 days).
+    const prompt = `Generate 4 highly specific, personalized carbon reduction challenge templates for a user whose worst carbon category is "${worstCategory}" (specifically "${worstType}", which generated ${worstCo2} kg CO2 in the past 30 days).
 Return EXACTLY a JSON array of 4 challenge objects, and nothing else. No markdown wrapping.
 Each object MUST have:
 1. "title": string, e.g. "Plant-Based 3-Day Challenge" or "Car-Free Commuting"
@@ -363,6 +361,30 @@ Each object MUST have:
 4. "duration_days": number (integer)
 
 Ensure the challenges match the worst category or worst activity type. Use realistic savings numbers. Do not include formatting other than raw JSON array.`;
+
+    if (geminiKey && geminiKey !== 'your_key_here') {
+      try {
+        const genAI = new GoogleGenerativeAI(geminiKey);
+        const model = genAI.getGenerativeModel({
+          model: 'gemini-1.5-flash',
+          generationConfig: { responseMimeType: 'application/json' }
+        });
+        const result = await model.generateContent(prompt);
+        const text = result.response.text().trim();
+        const cleanJson = text.replace(/^```json\s*/, '').replace(/```$/, '').trim();
+        const parsed = JSON.parse(cleanJson);
+        if (Array.isArray(parsed) && parsed.length === 4) {
+          return res.json(parsed);
+        }
+      } catch (err) {
+        console.error('Gemini challenge generation failed:', err.message);
+      }
+    }
+
+    if (apiKey && apiKey !== 'your_key_here') {
+      try {
+        const modelName = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
+        const anthropic = new Anthropic({ apiKey });
 
         const response = await anthropic.messages.create({
           model: modelName,

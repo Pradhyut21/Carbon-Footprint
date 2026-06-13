@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.22.0",
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.6.8",
     "better-sqlite3": "^9.6.0",
     "clsx": "^2.1.1",
@@ -49,6 +50,8 @@
       "^.+\\.jsx?$": "babel-jest"
     },
     "testEnvironment": "node",
-    "extensionsToTreatAsEsm": [".jsx"]
+    "extensionsToTreatAsEsm": [
+      ".jsx"
+    ]
   }
 }

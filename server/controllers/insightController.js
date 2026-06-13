@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import db from '../db/database.js';
 
 // In-memory rate limiting map: userId -> array of timestamps
@@ -81,8 +82,12 @@ export async function getAiInsights(req, res, next) {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === 'your_key_here') {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    const hasGemini = geminiKey && geminiKey !== 'your_key_here';
+    const hasAnthropic = anthropicKey && anthropicKey !== 'your_key_here';
+
+    if (!hasGemini && !hasAnthropic) {
       // Stream mock insights if API key is not configured
       const mockText = `🌱 **CarbonLens AI Assistant Insights (Demo Mode)**
 
@@ -138,29 +143,67 @@ Format your response exactly as follows:
 
 Be concise, engaging, and professional. Respond in under 250 words.`;
 
-    const modelName = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
-    const anthropic = new Anthropic({ apiKey });
+    if (hasGemini) {
+      try {
+        const genAI = new GoogleGenerativeAI(geminiKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+        const result = await model.generateContentStream([
+          systemPrompt,
+          `Here is my carbon footprint data for the past 30 days as JSON: ${JSON.stringify(dataToSend)}`
+        ]);
 
-    const stream = await anthropic.messages.create({
-      model: modelName,
-      max_tokens: 500,
-      system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `Here is my carbon footprint data for the past 30 days as JSON: ${JSON.stringify(dataToSend)}`
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text();
+          res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
         }
-      ],
-      stream: true
-    });
-
-    for await (const chunk of stream) {
-      if (chunk.type === 'content_block_delta' && chunk.delta.text) {
-        res.write(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`);
+        res.write('event: done\ndata: [DONE]\n\n');
+        res.end();
+        return;
+      } catch (err) {
+        console.error('Gemini streaming failed:', err.message);
+        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+        res.end();
+        return;
       }
     }
 
-    res.write('event: done\ndata: [DONE]\n\n');
+    if (hasAnthropic) {
+      try {
+        const modelName = process.env.ANTHROPIC_MODEL || 'claude-3-5-haiku-20241022';
+        const anthropic = new Anthropic({ apiKey: anthropicKey });
+
+        const stream = await anthropic.messages.create({
+          model: modelName,
+          max_tokens: 500,
+          system: systemPrompt,
+          messages: [
+            {
+              role: 'user',
+              content: `Here is my carbon footprint data for the past 30 days as JSON: ${JSON.stringify(dataToSend)}`
+            }
+          ],
+          stream: true
+        });
+
+        for await (const chunk of stream) {
+          if (chunk.type === 'content_block_delta' && chunk.delta.text) {
+            res.write(`data: ${JSON.stringify({ text: chunk.delta.text })}\n\n`);
+          }
+        }
+
+        res.write('event: done\ndata: [DONE]\n\n');
+        res.end();
+        return;
+      } catch (err) {
+        console.error('Claude streaming failed:', err.message);
+        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+        res.end();
+        return;
+      }
+    }
+
+    // Fallback if neither API key is active
+    res.write(`data: ${JSON.stringify({ error: 'No valid AI API key found. Please set GEMINI_API_KEY or ANTHROPIC_API_KEY.' })}\n\n`);
     res.end();
   } catch (err) {
     if (!res.headersSent) {
