@@ -29,6 +29,11 @@ app.use(cors({
 
 app.use(express.json());
 
+// Root health check endpoint for Render / deployments
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'CarbonLens API Server is running' });
+});
+
 // Mount API routes
 app.use('/api', apiRouter);
 
