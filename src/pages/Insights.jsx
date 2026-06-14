@@ -76,7 +76,10 @@ export default function Insights({ user }) {
     abortControllerRef.current = new AbortController();
 
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+      let apiBaseUrl = import.meta.env.VITE_API_URL || '';
+      if (apiBaseUrl.endsWith('/api')) {
+        apiBaseUrl = apiBaseUrl.slice(0, -4);
+      }
       const response = await fetch(`${apiBaseUrl}/api/insights`, {
         method: 'POST',
         headers: {
