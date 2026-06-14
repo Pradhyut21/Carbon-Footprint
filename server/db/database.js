@@ -6,20 +6,15 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Store database file in the root directory, using /tmp on Vercel for write access, or custom SQLITE_DB_DIR
+// Store database file in the root directory, using /tmp in production for write access
 const dbFile = process.env.NODE_ENV === 'test' ? 'carbonlens_test.db' : 'carbonlens.db';
-let dbPath;
-if (process.env.SQLITE_DB_DIR) {
-  dbPath = path.resolve(process.env.SQLITE_DB_DIR, dbFile);
-} else if (process.env.VERCEL) {
-  dbPath = '/tmp/carbonlens.db';
-} else {
-  dbPath = path.resolve(__dirname, `../../${dbFile}`);
-}
+const dbPath = process.env.NODE_ENV === 'production'
+  ? '/tmp/carbonlens.db'
+  : (process.env.NODE_ENV === 'test' ? 'carbonlens_test.db' : './carbonlens.db');
 
 // Ensure the directory exists
 const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
+if (dbDir && !fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
 
