@@ -76,7 +76,8 @@ export default function Insights({ user }) {
     abortControllerRef.current = new AbortController();
 
     try {
-      const response = await fetch('/api/insights', {
+      const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiBaseUrl}/api/insights`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
