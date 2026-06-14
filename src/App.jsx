@@ -45,7 +45,8 @@ export default function App() {
       localStorage.setItem('carbonlens_user', JSON.stringify(res.data));
       setCurrentView('dashboard');
     } catch (err) {
-      setLoginError(err.response?.data?.error || 'Failed to login. Please try again.');
+      const errMsg = err.response?.data?.error;
+      setLoginError(typeof errMsg === 'string' ? errMsg : (errMsg?.message || 'Failed to login. Please try again.'));
     } finally {
       setIsLoggingIn(false);
     }
