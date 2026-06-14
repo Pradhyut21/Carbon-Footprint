@@ -14,7 +14,7 @@
     "lint": "eslint src/ server/"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "22.x"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.22.0",
