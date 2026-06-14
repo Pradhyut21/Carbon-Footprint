@@ -7,6 +7,7 @@ if (baseURL !== '/api' && !baseURL.endsWith('/api')) {
 
 const api = axios.create({
   baseURL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }

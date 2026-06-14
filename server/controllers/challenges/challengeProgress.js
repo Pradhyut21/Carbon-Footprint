@@ -1,8 +1,11 @@
-import db from '../db/database.js';
-import { MS_PER_DAY } from '../constants/appConstants.js';
+import db from '../../db/database.js';
+import { MS_PER_DAY } from '../../constants/config.js';
 
 /**
- * Checks if transport challenge keyword matches
+ * Checks if transport challenge keyword matches.
+ * @param {string} title - The challenge title
+ * @param {string} desc - The challenge description
+ * @returns {boolean} True if transport related
  */
 function isTransportChallenge(title, desc) {
   return title.includes('car-free') || title.includes('transit') || title.includes('commute') || 
@@ -10,7 +13,10 @@ function isTransportChallenge(title, desc) {
 }
 
 /**
- * Checks if food challenge keyword matches
+ * Checks if food challenge keyword matches.
+ * @param {string} title - The challenge title
+ * @param {string} desc - The challenge description
+ * @returns {boolean} True if food related
  */
 function isFoodChallenge(title, desc) {
   return title.includes('plant') || title.includes('vegetarian') || title.includes('vegan') || 
@@ -18,7 +24,10 @@ function isFoodChallenge(title, desc) {
 }
 
 /**
- * Checks if energy challenge keyword matches
+ * Checks if energy challenge keyword matches.
+ * @param {string} title - The challenge title
+ * @param {string} desc - The challenge description
+ * @returns {boolean} True if energy related
  */
 function isEnergyChallenge(title, desc) {
   return title.includes('energy') || title.includes('saver') || title.includes('electr') || 
@@ -26,7 +35,10 @@ function isEnergyChallenge(title, desc) {
 }
 
 /**
- * Checks if waste challenge keyword matches
+ * Checks if waste challenge keyword matches.
+ * @param {string} title - The challenge title
+ * @param {string} desc - The challenge description
+ * @returns {boolean} True if waste related
  */
 function isWasteChallenge(title, desc) {
   return title.includes('waste') || title.includes('trash') || title.includes('landfill') || 
@@ -34,7 +46,12 @@ function isWasteChallenge(title, desc) {
 }
 
 /**
- * Calculates progress for transport challenge
+ * Calculates progress for transport challenge.
+ * @param {Object} challenge - Database challenge record
+ * @param {number} elapsed - Days elapsed
+ * @param {number} total - Total duration days
+ * @returns {number} Progress percentage
+ * @throws {Error} If database execution fails
  */
 function calculateTransportProgress(challenge, elapsed, total) {
   const result = db.prepare(`
@@ -50,7 +67,12 @@ function calculateTransportProgress(challenge, elapsed, total) {
 }
 
 /**
- * Calculates progress for food challenge
+ * Calculates progress for food challenge.
+ * @param {Object} challenge - Database challenge record
+ * @param {number} elapsed - Days elapsed
+ * @param {number} total - Total duration days
+ * @returns {number} Progress percentage
+ * @throws {Error} If database execution fails
  */
 function calculateFoodProgress(challenge, elapsed, total) {
   const result = db.prepare(`
@@ -66,7 +88,12 @@ function calculateFoodProgress(challenge, elapsed, total) {
 }
 
 /**
- * Helper to fetch sum of electricity quantity
+ * Helper to fetch sum of electricity quantity.
+ * @param {string|number} userId - The user identifier
+ * @param {string} startStr - Start date YYYY-MM-DD
+ * @param {string} endStr - End date YYYY-MM-DD
+ * @returns {number} Quantity sum
+ * @throws {Error} If database execution fails
  */
 function getElectricityQty(userId, startStr, endStr) {
   const row = db.prepare(`
@@ -80,7 +107,10 @@ function getElectricityQty(userId, startStr, endStr) {
 }
 
 /**
- * Calculates progress for energy challenge
+ * Calculates progress for energy challenge.
+ * @param {Object} challenge - Database challenge record
+ * @returns {number} Progress percentage
+ * @throws {Error} If database execution fails
  */
 function calculateEnergyProgress(challenge) {
   const start = new Date(challenge.start_date);
@@ -102,32 +132,34 @@ function calculateEnergyProgress(challenge) {
 }
 
 /**
- * Calculates progress for waste challenge
+ * Calculates progress for waste challenge.
+ * @param {Object} challenge - Database challenge record
+ * @returns {number} Progress percentage
+ * @throws {Error} If database execution fails
  */
 function calculateWasteProgress(challenge) {
   const landfill = db.prepare(`
     SELECT COUNT(*) as count FROM activities
-    WHERE user_id = ? 
-      AND logged_at = ?
-      AND category = 'waste'
-      AND activity_type = 'landfill'
+    WHERE user_id = ? AND logged_at = ? AND category = 'waste' AND activity_type = 'landfill'
   `).get(challenge.user_id, challenge.start_date);
 
   if (landfill.count > 0) return 0;
 
   const successLogs = db.prepare(`
     SELECT COUNT(*) as count FROM activities
-    WHERE user_id = ? 
-      AND logged_at = ?
-      AND category = 'waste'
-      AND activity_type IN ('recycled', 'composted')
+    WHERE user_id = ? AND logged_at = ? AND category = 'waste' AND activity_type IN ('recycled', 'composted')
   `).get(challenge.user_id, challenge.start_date);
 
   return successLogs.count > 0 ? 100 : 0;
 }
 
 /**
- * Dispatches progress check to matched category algorithm
+ * Dispatches progress check to matched category algorithm.
+ * @param {Object} challenge - Database challenge record
+ * @param {number} elapsedDays - Days elapsed
+ * @param {number} totalDays - Total duration days
+ * @returns {number} Progress percentage
+ * @throws {Error} If database execution fails
  */
 function dispatchCategoryProgress(challenge, elapsedDays, totalDays) {
   const titleLower = challenge.title.toLowerCase();
@@ -152,6 +184,7 @@ function dispatchCategoryProgress(challenge, elapsedDays, totalDays) {
  * Helper to calculate challenge progress percentage dynamically.
  * @param {Object} challenge - Database challenge record
  * @returns {number} Progress percentage (0 - 100)
+ * @throws {Error} If database execution fails
  */
 export function calculateChallengeProgress(challenge) {
   if (challenge.status === 'completed') return 100;

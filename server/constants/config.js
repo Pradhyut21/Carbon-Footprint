@@ -130,3 +130,30 @@ export const FALLBACK_TEMPLATES = {
     }
   ]
 };
+
+export const PREDEFINED_CHALLENGES = [
+  {
+    title: 'Car-Free Week',
+    description: 'Log 0 car or motorcycle trips for 7 days. Opt for public transit, bike, or walk!',
+    target_reduction_kg: 15.0,
+    duration_days: 7
+  },
+  {
+    title: 'Plant-Based Week',
+    description: 'Eat zero beef or lamb for 7 days. Try delicious vegetarian meals!',
+    target_reduction_kg: 20.0,
+    duration_days: 7
+  },
+  {
+    title: 'Energy Saver',
+    description: 'Reduce electricity logs by 20% compared to your previous week.',
+    target_reduction_kg: 10.0,
+    duration_days: 7
+  },
+  {
+    title: 'Zero Waste Day',
+    description: 'Only compost or recycle waste (0 landfill waste logs) for 1 full day.',
+    target_reduction_kg: 5.0,
+    duration_days: 1
+  }
+];

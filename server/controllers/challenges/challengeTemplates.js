@@ -1,10 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import logger from '../utils/logger.js';
-import { FALLBACK_TEMPLATES } from '../constants/appConstants.js';
+import logger from '../../utils/logger.js';
+import db from '../../db/database.js';
+import { FALLBACK_TEMPLATES } from '../../constants/config.js';
 
 /**
- * Formats fallback descriptions dynamically
+ * Formats fallback descriptions dynamically.
+ * @param {string} title - Template title
+ * @param {string} category - Challenge category
+ * @param {number} worstCo2 - User footprint weight in kg
+ * @returns {string} Description
  */
 function formatDescription(title, category, worstCo2) {
   if (category === 'food' && title === 'Plant-Based 3-Day Challenge') {
@@ -34,7 +39,11 @@ function formatDescription(title, category, worstCo2) {
 }
 
 /**
- * Builds instructions prompt text
+ * Builds instructions prompt text.
+ * @param {string} worstCategory - Footprint category
+ * @param {string} worstType - Specific activity type
+ * @param {number} worstCo2 - Total emissions in kg
+ * @returns {string} Prompt instructions
  */
 function buildPromptText(worstCategory, worstType, worstCo2) {
   return `Generate 4 highly specific, personalized carbon reduction challenge templates for a user whose worst carbon category is "${worstCategory}" (specifically "${worstType}", which generated ${worstCo2} kg CO2 in the past 30 days).
@@ -49,12 +58,13 @@ Ensure the challenges match the worst category or worst activity type. Use reali
 }
 
 /**
- * Generates templates using Gemini
- * @param {string} worstCategory 
- * @param {string} worstType 
- * @param {number} worstCo2 
- * @param {string} key 
- * @returns {Promise<Array<Object>|null>}
+ * Generates templates using Gemini.
+ * @param {string} worstCategory - The worst category
+ * @param {string} worstType - The worst activity type
+ * @param {number} worstCo2 - The worst co2 quantity in kg
+ * @param {string} key - Gemini API key
+ * @returns {Promise<Array<Object>|null>} Stored challenges list or null
+ * @throws {Error} If Gemini generation fails
  */
 export async function generateGeminiTemplates(worstCategory, worstType, worstCo2, key) {
   try {
@@ -67,9 +77,7 @@ export async function generateGeminiTemplates(worstCategory, worstType, worstCo2
     const text = result.response.text().trim();
     const cleanJson = text.replace(/^```json\s*/, '').replace(/```$/, '').trim();
     const parsed = JSON.parse(cleanJson);
-    if (Array.isArray(parsed) && parsed.length === 4) {
-      return parsed;
-    }
+    if (Array.isArray(parsed) && parsed.length === 4) return parsed;
   } catch (err) {
     logger.error('Gemini challenge generation failed:', err.message);
   }
@@ -77,12 +85,13 @@ export async function generateGeminiTemplates(worstCategory, worstType, worstCo2
 }
 
 /**
- * Generates templates using Claude
- * @param {string} worstCategory 
- * @param {string} worstType 
- * @param {number} worstCo2 
- * @param {string} key 
- * @returns {Promise<Array<Object>|null>}
+ * Generates templates using Claude.
+ * @param {string} worstCategory - The worst category
+ * @param {string} worstType - The worst activity type
+ * @param {number} worstCo2 - The worst co2 quantity in kg
+ * @param {string} key - Claude API key
+ * @returns {Promise<Array<Object>|null>} Stored challenges list or null
+ * @throws {Error} If Claude generation fails
  */
 export async function generateClaudeTemplates(worstCategory, worstType, worstCo2, key) {
   try {
@@ -102,10 +111,10 @@ export async function generateClaudeTemplates(worstCategory, worstType, worstCo2
 }
 
 /**
- * Generates fallback rule-based templates
- * @param {string} worstCategory 
- * @param {number} worstCo2 
- * @returns {Array<Object>}
+ * Generates fallback rule-based templates.
+ * @param {string} worstCategory - Worst carbon category
+ * @param {number} worstCo2 - Emissions footprint weight
+ * @returns {Array<Object>} List of challenge templates
  */
 export function generateFallbackTemplates(worstCategory, worstCo2) {
   const list = FALLBACK_TEMPLATES[worstCategory] || FALLBACK_TEMPLATES.default;
@@ -113,4 +122,56 @@ export function generateFallbackTemplates(worstCategory, worstCo2) {
     ...item,
     description: formatDescription(item.title, worstCategory, worstCo2)
   }));
+}
+
+/**
+ * Helper to determine worst category and worst activity type in the last 30 days.
+ * @param {string|number} userId - The user ID
+ * @returns {Object} Worst metrics
+ * @throws {Error} If DB execution fails
+ */
+export function getWorstCategoryAndType(userId) {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const dateStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+  const catRow = db.prepare(`
+    SELECT category, SUM(co2_kg) as co2 FROM activities
+    WHERE user_id = ? AND logged_at >= ?
+    GROUP BY category ORDER BY co2 DESC LIMIT 1
+  `).get(userId, dateStr);
+
+  const typeRow = db.prepare(`
+    SELECT activity_type, SUM(co2_kg) as co2 FROM activities
+    WHERE user_id = ? AND logged_at >= ?
+    GROUP BY activity_type ORDER BY co2 DESC LIMIT 1
+  `).get(userId, dateStr);
+
+  return {
+    worstCategory: catRow ? catRow.category : 'food',
+    worstCo2: catRow ? Number(catRow.co2.toFixed(2)) : 0,
+    worstType: typeRow ? typeRow.activity_type : 'beef'
+  };
+}
+
+/**
+ * Helper to fetch templates from AI or Fallback.
+ * @param {string} worstCategory - The worst category
+ * @param {string} worstType - The worst activity type
+ * @param {number} worstCo2 - The worst co2 footprint weight
+ * @returns {Promise<Array<Object>>} Custom templates array
+ * @throws {Error} If dynamic template builders throw
+ */
+export async function getPersonalizedTemplates(worstCategory, worstType, worstCo2) {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (geminiKey && geminiKey !== 'your_key_here') {
+    const geminiRes = await generateGeminiTemplates(worstCategory, worstType, worstCo2, geminiKey);
+    if (geminiRes) return geminiRes;
+  }
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (apiKey && apiKey !== 'your_key_here') {
+    const claudeRes = await generateClaudeTemplates(worstCategory, worstType, worstCo2, apiKey);
+    if (claudeRes) return claudeRes;
+  }
+  return generateFallbackTemplates(worstCategory, worstCo2);
 }

@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import csurf from 'csurf';
 import apiRouter from './routes/api.js';
 import db from './db/database.js';
 import { seed } from './db/seed.js';
@@ -12,8 +14,36 @@ dotenv.config();
 
 const app = express();
 
-// Set security headers using Helmet
-app.use(helmet());
+// Set security headers using Helmet with CSP directives
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:"],
+    }
+  }
+}));
+
+// Set up cookies
+app.use(cookieParser('carbonlens-signed-cookie-secret-key-12345'));
+
+const csrfProtection = csurf({ cookie: { signed: true } });
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'test') {
+    return next();
+  }
+  return csrfProtection(req, res, (err) => {
+    if (err) return next(err);
+    res.cookie('XSRF-TOKEN', req.csrfToken(), {
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
+    next();
+  });
+});
 
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
