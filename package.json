@@ -13,6 +13,10 @@
     "build": "vite build",
     "lint": "eslint src/ server/"
   },
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.22.0",
     "@google/generative-ai": "^0.24.1",
