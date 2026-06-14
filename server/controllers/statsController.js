@@ -5,6 +5,7 @@ import db from '../db/database.js';
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function getStats(req, res, next) {
   try {
@@ -137,6 +138,7 @@ export async function getStats(req, res, next) {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function getStatsCompare(req, res, next) {
   try {

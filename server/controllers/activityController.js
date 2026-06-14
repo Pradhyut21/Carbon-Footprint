@@ -6,6 +6,7 @@ import { EMISSION_FACTORS } from '../constants/emissionFactors.js';
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function getActivities(req, res, next) {
   try {
@@ -35,6 +36,7 @@ export async function getActivities(req, res, next) {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function createActivity(req, res, next) {
   try {
@@ -107,6 +109,7 @@ export async function createActivity(req, res, next) {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function deleteActivity(req, res, next) {
   try {

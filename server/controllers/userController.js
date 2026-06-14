@@ -5,6 +5,7 @@ import db from '../db/database.js';
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function login(req, res, next) {
   try {

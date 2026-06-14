@@ -14,13 +14,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ReferenceLine,
   PieChart,
   Pie,
   Cell
 } from 'recharts';
-import { Flame, ShieldAlert, Award, Calendar, Share2, Check } from 'lucide-react';
+import { Flame, ShieldAlert, Calendar, Share2, Check } from 'lucide-react';
 
 const CATEGORY_COLORS = {
   transport: '#3b82f6', // blue

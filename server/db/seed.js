@@ -1,5 +1,6 @@
 import db from './database.js';
 import { EMISSION_FACTORS } from '../constants/emissionFactors.js';
+import logger from '../utils/logger.js';
 
 function getLocalDateString(offsetDays) {
   const date = new Date();
@@ -136,7 +137,7 @@ export function seed() {
     'completed'
   );
 
-  console.log(`Database seeded successfully for user "demo"!`);
+  logger.log(`Database seeded successfully for user "demo"!`);
 }
 
 // Run if called directly

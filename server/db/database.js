@@ -1,13 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Store database file in the root directory, using /tmp in production for write access
-const dbFile = process.env.NODE_ENV === 'test' ? 'carbonlens_test.db' : 'carbonlens.db';
 const dbPath = process.env.NODE_ENV === 'production'
   ? '/tmp/carbonlens.db'
   : (process.env.NODE_ENV === 'test' ? 'carbonlens_test.db' : './carbonlens.db');

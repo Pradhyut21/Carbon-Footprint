@@ -1,13 +1,19 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import apiRouter from './routes/api.js';
 import db from './db/database.js';
 import { seed } from './db/seed.js';
+import logger from './utils/logger.js';
 
 dotenv.config();
 
 const app = express();
+
+// Set security headers using Helmet
+app.use(helmet());
 
 const isAllowedOrigin = (origin) => {
   if (!origin) return true;
@@ -29,6 +35,14 @@ app.use(cors({
 
 app.use(express.json());
 
+// Apply global rate limiting to all /api routes
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: { error: 'Too many requests' }
+});
+app.use('/api', globalLimiter);
+
 // Root health check endpoint for Render / deployments
 app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'CarbonLens API Server is running' });
@@ -42,17 +56,17 @@ try {
   if (process.env.NODE_ENV !== 'test') {
     const countRow = db.prepare('SELECT COUNT(*) as count FROM activities').get();
     if (countRow && countRow.count === 0) {
-      console.log('No activities found in DB. Seeding initial 30 days of data for "demo"...');
+      logger.log('No activities found in DB. Seeding initial 30 days of data for "demo"...');
       seed();
     }
   }
 } catch (err) {
-  console.error('Auto-seeding check failed:', err.message);
+  logger.error('Auto-seeding check failed:', err.message);
 }
 
 // Global error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err.message);
+app.use((err, req, res, _next) => {
+  logger.error('Error:', err.message);
   return res.status(err.status || 500).json({
     error: 'An internal server error occurred.'
   });

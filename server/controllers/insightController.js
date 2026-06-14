@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import db from '../db/database.js';
+import logger from '../utils/logger.js';
 
 // In-memory rate limiting map: userId -> array of timestamps
 const rateLimitMap = new Map();
@@ -10,6 +11,7 @@ const rateLimitMap = new Map();
  * @param {import('express').Request} req - Express request object
  * @param {import('express').Response} res - Express response object
  * @param {import('express').NextFunction} next - Express next function
+ * @returns {Promise<void>}
  */
 export async function getAiInsights(req, res, next) {
   try {
@@ -160,7 +162,7 @@ Be concise, engaging, and professional. Respond in under 250 words.`;
         res.end();
         return;
       } catch (err) {
-        console.error('Gemini streaming failed:', err.message);
+        logger.error('Gemini streaming failed:', err.message);
         res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
         res.end();
         return;
@@ -195,7 +197,7 @@ Be concise, engaging, and professional. Respond in under 250 words.`;
         res.end();
         return;
       } catch (err) {
-        console.error('Claude streaming failed:', err.message);
+        logger.error('Claude streaming failed:', err.message);
         res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
         res.end();
         return;

@@ -108,7 +108,7 @@ export default function LogActivity({ user }) {
       </div>
 
       {/* Category Tabs */}
-      <div className="flex space-x-1.5 bg-[#111811] p-1 rounded-xl border border-[#1e2e1e] overflow-x-auto">
+      <div role="tablist" aria-label="Activity Categories" className="flex space-x-1.5 bg-[#111811] p-1 rounded-xl border border-[#1e2e1e] overflow-x-auto">
         {CATEGORY_TABS.map((tab) => {
           const TabIcon = tab.icon;
           const isActive = category === tab.id;
@@ -116,6 +116,9 @@ export default function LogActivity({ user }) {
             <button
               key={tab.id}
               id={`tab-${tab.id}`}
+              role="tab"
+              aria-selected={isActive}
+              aria-controls="activity-form"
               onClick={() => setCategory(tab.id)}
               className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                 isActive 
@@ -131,7 +134,7 @@ export default function LogActivity({ user }) {
       </div>
 
       {/* Main Form Card */}
-      <div className="rounded-xl border border-[#1e2e1e] bg-[#111811] p-6 shadow-xl relative">
+      <div id="activity-form" className="rounded-xl border border-[#1e2e1e] bg-[#111811] p-6 shadow-xl relative">
         <form onSubmit={handleSubmit} className="space-y-5">
           {formError && (
             <div className="p-4 bg-dangerRed/10 border border-dangerRed/30 rounded-lg text-dangerRed text-xs flex items-center space-x-2">

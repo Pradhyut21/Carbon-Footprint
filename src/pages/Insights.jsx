@@ -26,7 +26,7 @@ export default function Insights({ user }) {
         const { text, timestamp } = JSON.parse(cachedData);
         setInsightText(text);
         setCacheTime(timestamp);
-      } catch (e) {
+      } catch {
         localStorage.removeItem(cacheKey);
       }
     } else {

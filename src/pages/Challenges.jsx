@@ -38,7 +38,7 @@ export default function Challenges({ user }) {
       setTemplatesLoading(true);
       api.get('/challenges/templates', { params: { userId: user.id } })
         .then(res => setTemplates(res.data))
-        .catch(err => console.error('Failed to fetch challenge templates', err))
+        .catch(() => {})
         .finally(() => setTemplatesLoading(false));
     }
   }, [user, fetchChallenges]);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useActivities } from '../hooks/useActivities.js';
 import { EMISSION_FACTORS } from '../constants/emissionFactors.js';
-import { Trash2, Download, Search, Calendar, Filter } from 'lucide-react';
+import { Trash2, Download, Search, Filter } from 'lucide-react';
 
 const CATEGORIES = ['transport', 'food', 'energy', 'shopping', 'waste'];
 const CATEGORY_LABELS = {
@@ -209,12 +209,12 @@ export default function History({ user }) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#0a0f0a] border-b border-[#1e2e1e] text-[10px] font-bold text-textMuted uppercase tracking-wider">
-                  <th className="px-5 py-4">Date</th>
-                  <th className="px-5 py-4">Category</th>
-                  <th className="px-5 py-4">Activity</th>
-                  <th className="px-5 py-4">Quantity</th>
-                  <th className="px-5 py-4 text-right">CO₂ (kg)</th>
-                  <th className="px-5 py-4 text-center">Delete</th>
+                  <th scope="col" className="px-5 py-4">Date</th>
+                  <th scope="col" className="px-5 py-4">Category</th>
+                  <th scope="col" className="px-5 py-4">Activity</th>
+                  <th scope="col" className="px-5 py-4">Quantity</th>
+                  <th scope="col" className="px-5 py-4 text-right">CO₂ (kg)</th>
+                  <th scope="col" className="px-5 py-4 text-center">Delete</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1e2e1e]/60">

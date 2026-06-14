@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import db from '../db/database.js';
+import logger from '../utils/logger.js';
 
 // Predefined challenges config
 export const PREDEFINED_CHALLENGES = [
@@ -172,6 +173,7 @@ export function calculateChallengeProgress(challenge) {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function getChallenges(req, res, next) {
   try {
@@ -216,6 +218,7 @@ export async function getChallenges(req, res, next) {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function joinChallenge(req, res, next) {
   try {
@@ -224,22 +227,28 @@ export async function joinChallenge(req, res, next) {
       return res.status(400).json({ error: 'userId and challenge title are required' });
     }
 
+    // Sanitize user inputs to prevent Stored XSS
+    const cleanTitle = String(title).trim().replace(/<[^>]*>/g, '');
+    if (!cleanTitle) {
+      return res.status(400).json({ error: 'Invalid challenge title' });
+    }
+
     // Check if challenge is already active/completed for this user
     const existing = db.prepare(`
       SELECT * FROM challenges WHERE user_id = ? AND title = ? AND status = 'active'
-    `).get(userId, title);
+    `).get(userId, cleanTitle);
 
     if (existing) {
       return res.status(400).json({ error: 'You already have an active challenge with this title' });
     }
 
-    let finalDescription = description;
+    let finalDescription = description ? String(description).trim().replace(/<[^>]*>/g, '') : description;
     let finalTarget = target_reduction_kg;
     let finalDuration = duration_days;
 
     // Fallback to PREDEFINED_CHALLENGES if parameters not supplied
     if (!finalDescription || finalTarget === undefined || !finalDuration) {
-      const template = PREDEFINED_CHALLENGES.find(c => c.title === title);
+      const template = PREDEFINED_CHALLENGES.find(c => c.title === cleanTitle);
       if (template) {
         finalDescription = template.description;
         finalTarget = template.target_reduction_kg;
@@ -259,12 +268,12 @@ export async function joinChallenge(req, res, next) {
     const result = db.prepare(`
       INSERT INTO challenges (user_id, title, description, target_reduction_kg, start_date, end_date, status)
       VALUES (?, ?, ?, ?, ?, ?, 'active')
-    `).run(userId, title, finalDescription, Number(finalTarget), startStr, endStr);
+    `).run(userId, cleanTitle, finalDescription, Number(finalTarget), startStr, endStr);
 
     const newChallenge = {
       id: result.lastInsertRowid,
       user_id: Number(userId),
-      title,
+      title: cleanTitle,
       description: finalDescription,
       target_reduction_kg: Number(finalTarget),
       start_date: startStr,
@@ -284,6 +293,7 @@ export async function joinChallenge(req, res, next) {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function updateChallengeStatus(req, res, next) {
   try {
@@ -313,6 +323,7 @@ export async function updateChallengeStatus(req, res, next) {
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
+ * @returns {Promise<void>}
  */
 export async function getChallengesTemplates(req, res, next) {
   try {
@@ -377,7 +388,7 @@ Ensure the challenges match the worst category or worst activity type. Use reali
           return res.json(parsed);
         }
       } catch (err) {
-        console.error('Gemini challenge generation failed:', err.message);
+        logger.error('Gemini challenge generation failed:', err.message);
       }
     }
 
@@ -400,7 +411,7 @@ Ensure the challenges match the worst category or worst activity type. Use reali
           return res.json(parsed);
         }
       } catch (err) {
-        console.error('Claude challenge generation failed, using rule-based fallback:', err);
+        logger.error('Claude challenge generation failed, using rule-based fallback:', err);
       }
     }
 

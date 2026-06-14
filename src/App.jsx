@@ -24,7 +24,7 @@ export default function App() {
     if (cached) {
       try {
         setUser(JSON.parse(cached));
-      } catch (e) {
+      } catch {
         localStorage.removeItem('carbonlens_user');
       }
     }
